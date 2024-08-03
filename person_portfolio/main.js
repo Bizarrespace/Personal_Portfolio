@@ -227,15 +227,77 @@ function createMoon(scene) {
   return moon;
 }
 
+function createProjectObjects(scene, camera) {
+  const projects = [
+    { name: 'Project 1', color: 0xff0000, link: 'https://github.com/yourusername/project1' },
+    { name: 'Project 2', color: 0x00ff00, link: 'https://github.com/yourusername/project2' },
+    { name: 'Project 3', color: 0x0000ff, link: 'https://github.com/yourusername/project3' },
+  ];
+
+  const projectObjects = projects.map((project, index) => {
+    const geometry = new THREE.BoxGeometry(5, 5, 5);
+    const material = new THREE.MeshStandardMaterial({ color: project.color });
+    const cube = new THREE.Mesh(geometry, material);
+    
+    // Position objects off-screen initially
+    cube.position.set(
+      0 + index * 3,  // X position: to the right of the camera path
+      0,                // Y position: at the center of the view
+      70 + index * 20  // Z position: slightly ahead of the camera starting point
+    );
+
+    
+    scene.add(cube);
+    
+    return { mesh: cube, project };
+  });
+
+  // Add click event listener
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  window.addEventListener('click', (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(projectObjects.map(po => po.mesh));
+
+    if (intersects.length > 0) {
+      const clickedObject = projectObjects.find(po => po.mesh === intersects[0].object);
+      if (clickedObject) {
+        window.open(clickedObject.project.link, '_blank');
+      }
+    }
+  });
+
+  return projectObjects;
+}
+
 // Handle camera movement on scroll
-function animateOnScroll(camera, long, t) {
+function animateOnScroll(camera, long, moon, projectObjects, t) {
 
   long.rotation.y += 0.01;
   long.rotation.z += 0.01;
 
+  moon.position.x += 0.5; // Want to make it responsive with scrolling, right now it just moves to the right whenever the user scrolls either left or right
+
   camera.position.z = t * -0.02;
   camera.position.x = t * -0.002;
   camera.rotation.y = t * -0.00010;
+
+  // Animate project objects
+  projectObjects.forEach((po) => {
+    po.mesh.rotation.y += 0.02;
+  });
+
+  // Debug output
+  console.log('Camera position:', 
+    'x:', camera.position.x.toFixed(2), 
+    'y:', camera.position.y.toFixed(2), 
+    'z:', camera.position.z.toFixed(2)
+  );
 }
 
 // Main animation loop
@@ -248,6 +310,7 @@ function animate(renderer, scene, camera, torus, moon, starField, updateSkyPosit
   torus.rotation.y += 0.005;
   torus.rotation.z += 0.01;
 
+  
   moon.rotation.x += 0.001;
   
   starField.rotation.y += 0.0001;
@@ -265,14 +328,15 @@ function main() {
   const updateSkyPosition = createSpaceBackground(scene, camera);
   const long = createLong(scene);
   const moon = createMoon(scene);
+  const projectObjects = createProjectObjects(scene, camera);
 
   document.body.onscroll = () => {
     const t = document.body.getBoundingClientRect().top;
-    animateOnScroll(camera, long, t);
+    animateOnScroll(camera, long, moon, projectObjects, t);
     starField.position.z = camera.position.z;
   };
 
-  animate(renderer, scene, camera, torus, moon, starField, updateSkyPosition);
+  animate(renderer, scene, camera, torus, moon, starField, updateSkyPosition, projectObjects);
 }
 
 // Start the application
