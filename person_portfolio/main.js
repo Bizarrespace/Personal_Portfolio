@@ -6,7 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 // Initialize the scene, camera, and renderer
 function initializeScene() {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('#bg')
   });
@@ -241,15 +241,27 @@ function createProjectObjects(scene, camera) {
     
     // Position objects off-screen initially
     cube.position.set(
-      0 + index * 3,  // X position: to the right of the camera path
+      0 + index * 1.5,  // X position: to the right of the camera path
       0,                // Y position: at the center of the view
-      70 + index * 20  // Z position: slightly ahead of the camera starting point
+      70 + index * 30  // Z position: slightly ahead of the camera starting point
     );
 
     
     scene.add(cube);
+    // Create corresponding HTML element
+    // We append it to the DOM here in parallel with the object, the positioning of it is taken care of in
+    // animate on scroll
+    const projectElement = document.createElement('div');
+    projectElement.className = 'project-info';
+    projectElement.innerHTML = `
+      <h2>${project.name}</h2>
+      <p>Description of ${project.name}</p>
+      <a href="${project.link}" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+
+    `;
+    document.body.appendChild(projectElement);
     
-    return { mesh: cube, project };
+    return { mesh: cube, project, element: projectElement };
   });
 
   // Add click event listener
@@ -281,7 +293,10 @@ function animateOnScroll(camera, long, moon, projectObjects, t) {
   long.rotation.y += 0.01;
   long.rotation.z += 0.01;
 
-  moon.position.x += 0.5; // Want to make it responsive with scrolling, right now it just moves to the right whenever the user scrolls either left or right
+  moon.position.x = (t * -0.02) - 70; // Want to make it responsive with scrolling, right now it just moves to the right whenever the user scrolls either left or right
+  moon.position.y = (t * -0.02) - 70;
+
+  console.log(t);
 
   camera.position.z = t * -0.02;
   camera.position.x = t * -0.002;
@@ -298,6 +313,23 @@ function animateOnScroll(camera, long, moon, projectObjects, t) {
     'y:', camera.position.y.toFixed(2), 
     'z:', camera.position.z.toFixed(2)
   );
+
+  // Update where HTML element (div) appears on the screen to match 3D object
+  projectObjects.forEach((po) => {
+    // Figure out where 3D object would appear on the 2D screen
+    const screenPosition = po.mesh.position.clone().project(camera);
+
+    // Convert screen position to actual pixel locations
+    const translateX = (screenPosition.x * 3 + 0.5) * window.innerWidth;
+    const translateY = (-screenPosition.y * 0.5 + 0.5) * window.innerHeight;
+    console.log(translateX)
+    console.log(translateY)
+
+    // Move the div to the right spot on the screen
+    // This makes it look like the div is attach to the 3D object
+    po.element.style.transform = `translate(${translateX}px, ${translateY}px)`;
+
+  });
 }
 
 // Main animation loop
@@ -311,9 +343,10 @@ function animate(renderer, scene, camera, torus, moon, starField, updateSkyPosit
   torus.rotation.z += 0.01;
 
   
-  moon.rotation.x += 0.001;
+  moon.rotation.y += 0.001;
+  moon.rotation.x += 0.005;
   
-  starField.rotation.y += 0.0001;
+  starField.rotation.y += 0.0003;
 
   updateSkyPosition();
   renderer.render(scene, camera);

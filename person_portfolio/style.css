@@ -8,7 +8,7 @@ canvas {
 
 
 :root {
-  --dark-bg: rgba(0, 0, 0, 0.127);
+  --dark-bg: rgba(0, 0, 0, 0);
   --spacing: 350px;
 
   font-family: brandon-grotesque, sans-serif;
@@ -76,4 +76,48 @@ blockquote p {
 
 .left {
   grid-column: 6 / 12;
+}
+
+
+p, h1, h2, h3, blockquote {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+
+/* Update the project-info styles */
+.project-info {
+  position: fixed;
+  right: 20px;
+  width: 300px;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  transition: opacity 0.3s ease;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  z-index: 1000; /* Ensure it's above other elements */
+}
+
+.project-info * {
+  pointer-events: auto; /* Ensure all child elements are interactive */
+}
+
+.project-info a {
+  color: #00aaff;
+  text-decoration: none;
+  cursor: pointer; /* Add a pointer cursor */
+  display: inline-block; /* Make the link a block element */
+  padding: 5px 10px; /* Add some padding for easier clicking */
+}
+
+.project-info a:hover {
+  text-decoration: underline;
+  background-color: rgba(255, 255, 255, 0.1); /* Add a subtle hover effect */
 }
