@@ -327,6 +327,7 @@ function animateOnScroll(camera, long, moon, projectObjects, t) {
   //   'z:', camera.position.z.toFixed(2)
   // );
 
+  
   // Update where HTML element (div) appears on the screen to match 3D object
   projectObjects.forEach((po) => {
     // Figure out where 3D object would appear on the 2D screen
@@ -350,8 +351,8 @@ function animateOnScroll(camera, long, moon, projectObjects, t) {
 // Main animation loop
 // Asking browser to execute animate function before next screen repaint, recursive 
 // function to do this about 60 times a second
-function animate(renderer, scene, camera, torus, moon, starField, updateSkyPosition) {
-  requestAnimationFrame(() => animate(renderer, scene, camera, torus, moon, starField, updateSkyPosition));
+function animate(renderer, scene, camera, torus, moon, starField, updateSkyPosition, projectObjects) {
+  requestAnimationFrame(() => animate(renderer, scene, camera, torus, moon, starField, updateSkyPosition, projectObjects));
 
   torus.rotation.x += 0.01;
   torus.rotation.y += 0.005;
@@ -363,6 +364,23 @@ function animate(renderer, scene, camera, torus, moon, starField, updateSkyPosit
   
   starField.rotation.y += 0.0003;
 
+  
+  // Get the current time in seconds
+  const time = Date.now() * 0.001;
+
+  // Rotate the project objects
+  projectObjects.forEach((po, index) => {
+    // Create a smooth oscillation using sine
+    // The multiplier 0.5 determines the speed of oscillation
+    const baseRotation = Math.sin(time * 3 + index);
+    
+    // Adjust the rotation range to favor the right side
+    // This will make the rotation range approximately -5 to +15 degrees
+    const adjustedRotation = (baseRotation * 0.175) + 0.5;
+    
+    // Apply the rotation to the y-axis of the object
+    po.mesh.rotation.y = adjustedRotation;
+  });
 
   updateSkyPosition();
   renderer.render(scene, camera);
