@@ -10,7 +10,7 @@ function initializeScene() {
   const renderer = new THREE.WebGLRenderer({
     canvas: document.querySelector('#bg')
   });
-
+  
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
 
@@ -229,39 +229,55 @@ function createMoon(scene) {
 
 function createProjectObjects(scene, camera) {
   const projects = [
-    { name: 'Project 1', color: 0xff0000, link: 'https://github.com/yourusername/project1' },
-    { name: 'Project 2', color: 0x00ff00, link: 'https://github.com/yourusername/project2' },
-    { name: 'Project 3', color: 0x0000ff, link: 'https://github.com/yourusername/project3' },
+    { name: 'Project 1', description: 'Testing to see if this works1', image: 'path/to/project1-image.jpg', link: 'https://github.com/yourusername/project1' },
+    { name: 'Project 2', description: 'Testing to see if this works2', image: 'path/to/project2-image.jpg', link: 'https://github.com/yourusername/project2' },
+    { name: 'Project 3', description: 'Testing to see if this works3', image: 'path/to/project3-image.jpg', link: 'https://github.com/yourusername/project3' },
   ];
 
   const projectObjects = projects.map((project, index) => {
-    const geometry = new THREE.BoxGeometry(5, 5, 5);
-    const material = new THREE.MeshStandardMaterial({ color: project.color });
-    const cube = new THREE.Mesh(geometry, material);
-    
-    // Position objects off-screen initially
-    cube.position.set(
+    // Create the screen
+    const screenGeometry = new THREE.PlaneGeometry(8, 4.5); // 16:9 aspect ratio
+    const screenTexture = new THREE.TextureLoader().load(project.image);
+    const screenMaterial = new THREE.MeshBasicMaterial({ map: screenTexture });
+    const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+
+    // Create the frame
+    const frameGeometry = new THREE.BoxGeometry(8.4, 4.9, 0.2);
+    const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const frame = new THREE.Mesh(frameGeometry, frameMaterial);
+
+    // Create a group to hold the screen and frame
+    const tv = new THREE.Group();
+    tv.add(screen);
+    tv.add(frame);
+
+    // Position the TV
+    tv.position.set(
       0 + index * 1.5,  // X position: to the right of the camera path
       0,                // Y position: at the center of the view
       70 + index * 30  // Z position: slightly ahead of the camera starting point
     );
 
     
-    scene.add(cube);
+
+    scene.add(tv);
+
     // Create corresponding HTML element
-    // We append it to the DOM here in parallel with the object, the positioning of it is taken care of in
-    // animate on scroll
     const projectElement = document.createElement('div');
     projectElement.className = 'project-info';
     projectElement.innerHTML = `
       <h2>${project.name}</h2>
-      <p>Description of ${project.name}</p>
+      <p>${project.description}</p>
       <a href="${project.link}" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-
     `;
+    projectElement.style.opacity = '0';
     document.body.appendChild(projectElement);
     
-    return { mesh: cube, project, element: projectElement };
+    return { 
+      mesh: tv, 
+      project, 
+      element: projectElement
+    };
   });
 
   // Add click event listener
@@ -274,10 +290,10 @@ function createProjectObjects(scene, camera) {
 
     raycaster.setFromCamera(mouse, camera);
 
-    const intersects = raycaster.intersectObjects(projectObjects.map(po => po.mesh));
+    const intersects = raycaster.intersectObjects(projectObjects.flatMap(po => po.mesh.children));
 
     if (intersects.length > 0) {
-      const clickedObject = projectObjects.find(po => po.mesh === intersects[0].object);
+      const clickedObject = projectObjects.find(po => po.mesh.children.includes(intersects[0].object));
       if (clickedObject) {
         window.open(clickedObject.project.link, '_blank');
       }
@@ -296,23 +312,20 @@ function animateOnScroll(camera, long, moon, projectObjects, t) {
   moon.position.x = (t * -0.02) - 70; // Want to make it responsive with scrolling, right now it just moves to the right whenever the user scrolls either left or right
   moon.position.y = (t * -0.02) - 70;
 
-  console.log(t);
+ //console.log(t);
 
   camera.position.z = t * -0.02;
   camera.position.x = t * -0.002;
   camera.rotation.y = t * -0.00010;
 
-  // Animate project objects
-  projectObjects.forEach((po) => {
-    po.mesh.rotation.y += 0.02;
-  });
+  
 
   // Debug output
-  console.log('Camera position:', 
-    'x:', camera.position.x.toFixed(2), 
-    'y:', camera.position.y.toFixed(2), 
-    'z:', camera.position.z.toFixed(2)
-  );
+  // console.log('Camera position:', 
+  //   'x:', camera.position.x.toFixed(2), 
+  //   'y:', camera.position.y.toFixed(2), 
+  //   'z:', camera.position.z.toFixed(2)
+  // );
 
   // Update where HTML element (div) appears on the screen to match 3D object
   projectObjects.forEach((po) => {
@@ -322,8 +335,10 @@ function animateOnScroll(camera, long, moon, projectObjects, t) {
     // Convert screen position to actual pixel locations
     const translateX = (screenPosition.x * 3 + 0.5) * window.innerWidth;
     const translateY = (-screenPosition.y * 0.5 + 0.5) * window.innerHeight;
+    console.log("OBJECT")
     console.log(translateX)
     console.log(translateY)
+
 
     // Move the div to the right spot on the screen
     // This makes it look like the div is attach to the 3D object
@@ -348,6 +363,7 @@ function animate(renderer, scene, camera, torus, moon, starField, updateSkyPosit
   
   starField.rotation.y += 0.0003;
 
+
   updateSkyPosition();
   renderer.render(scene, camera);
 }
@@ -362,6 +378,14 @@ function main() {
   const long = createLong(scene);
   const moon = createMoon(scene);
   const projectObjects = createProjectObjects(scene, camera);
+
+  setTimeout(() => {
+    projectObjects.forEach(po => {
+      po.element.style.transition = 'opacity 0.5s ease-in';
+      po.element.style.opacity = '1';
+    });
+
+  }, 1500);
 
   document.body.onscroll = () => {
     const t = document.body.getBoundingClientRect().top;
